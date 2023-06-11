@@ -67,10 +67,19 @@ const generateAuthHeader = (accessToken) => {
   return {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Basic ${Buffer.from(`${API_KEY}:${SECRET_KEY}`).toString('base64')}`,
     },
   };
 };
+
+const generateReservedHeader = (accessToken) => {
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Buffer.from(`${API_KEY}:${SECRET_KEY}`).toString('base64')}`,
+      },
+    };
+  };
 
 // Define the JWT secret key
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -83,9 +92,8 @@ app.post('/auth/login', async (req, res) => {
         apiKey: API_KEY,
         secretKey: SECRET_KEY,
       },
-      generateAuthHeader(accessToken));
 
-      console.log(accessToken);
+      generateAuthHeader(accessToken));
 
     // Store the user data in MongoDB
     const { name, email, password } = req.body;
@@ -105,7 +113,7 @@ app.post('/auth/login', async (req, res) => {
         "getAllAvailableBanks": false,
         "preferredBanks": ["035"],
       },
-      generateAuthHeader(accessToken)
+      generateReservedHeader(accessToken)
     );
     const accountReference = accountResponse.data.responseBody.accountReference;
 
