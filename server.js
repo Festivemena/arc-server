@@ -14,6 +14,7 @@ const app = express();
 const API_KEY = process.env.MONNIFY_API_KEY;
 const SECRET_KEY = process.env.MONNIFY_SECRET_KEY;
 const BASE_URL = process.env.BASE_URL;
+const CONTRACT_CODE = process.env.CONTRACT_CODE;
 
 // Configure Express to parse JSON
 app.use(express.json());
@@ -83,7 +84,7 @@ app.post('/auth/login', async (req, res) => {
     await user.save();
 
     // Obtain the access token from Monnify
-    const response = await axios.post(`${BASE_URL}/auth/login`, {
+    const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
       apiKey: API_KEY,
       secretKey: SECRET_KEY,
     });
@@ -91,10 +92,14 @@ app.post('/auth/login', async (req, res) => {
 
     // Create a reserved account
     const accountResponse = await axios.post(
-      `${BASE_URL}/reservedaccounts`,
+      `${BASE_URL}/v2/bank-transfer/reserved-accounts`,
       {
-        accountReference: user._id, // Use the user's MongoDB _id as the account reference
-        accountName: user.name,
+        "accountReference" : user._id, // Use the user's MongoDB _id as the account reference
+        "accountName" : user.name,
+        "currencyCode" : "NGN",
+        "contractCode" : CONTRACT_CODE,
+        "customerEmail": user.email,
+        "customerName": user.name, 
       },
       generateAuthHeader(accessToken)
     );
