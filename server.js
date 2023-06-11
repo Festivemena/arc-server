@@ -111,7 +111,7 @@ app.post('/auth/login', async (req, res) => {
         "accountReference" : user._id, // Use the user's MongoDB _id as the account reference
         "accountName" : user.name,
         "currencyCode" : "NGN",
-        "contractCode" : CONTRACT_CODE,
+        "contractCode" : "0648558726",
         "customerEmail": user.email,
         "customerName": user.name,
         "getAllAvailableBanks": false,
