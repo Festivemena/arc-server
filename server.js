@@ -15,7 +15,6 @@ const app = express();
 const API_KEY = process.env.MONNIFY_API_KEY;
 const SECRET_KEY = process.env.MONNIFY_SECRET_KEY;
 const BASE_URL = process.env.BASE_URL;
-const reference = v4();
 const CONTRACT_CODE = process.env.CONTRACT_CODE;
 
 // Configure Express to parse JSON
@@ -175,7 +174,7 @@ app.post('/transfers', async (req, res) => {
     );
     
     const recipientAccount = recipientResponse.data.responseBody;
-
+    const reference = v4();
     // Perform the bank transfer
     const transferResponse = await axios.post(
       `${BASE_URL}/api/v2/disbursements/single`,
