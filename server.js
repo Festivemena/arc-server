@@ -144,35 +144,50 @@ app.post('/auth/login', async (req, res) => {
 });
 
 // Define an endpoint to initiate a bank transfer
+// Define an endpoint to initiate a bank transfer
 app.post('/transfers', async (req, res) => {
   try {
     const { senderAccountReference, recipientAccountNumber, amount } = req.body;
 
-    // Authenticate and obtain the access token
-    const authResponse = await axios.post(`${BASE_URL}/auth/login`, {
-      apiKey: API_KEY,
-      secretKey: SECRET_KEY,
-    });
-    const accessToken = authResponse.data.responseBody.accessToken;
+    const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
+        apiKey: API_KEY,
+        secretKey: SECRET_KEY,
+      },
+      generateAuthHeader(),
+      );
+
+    // Store the access token
+      const accessToken = response.data.responseBody.accessToken;
 
     // Fetch the sender's reserved account details
     const accountResponse = await axios.get(
-      `${BASE_URL}/reservedaccounts/${senderAccountReference}`,
-      generateAuthHeader(accessToken)
+      `${BASE_URL}/v2/bank-transfer/reserved-accounts/${senderAccountReference}`,
+      generateReservedHeader(accessToken)
     );
+    
     const senderAccount = accountResponse.data.responseBody;
+
+    const recipientResponse = await axios.get(
+      `${BASE_URL}/v1/disbursements/account/validate?accountNumber=${recipientAccountNumber}&bankCode=035`,
+      generateReservedHeader(accessToken)
+    );
+    
+    const recipientAccount = recipientResponse.data.responseBody;
 
     // Perform the bank transfer
     const transferResponse = await axios.post(
-      `${BASE_URL}/transfers`,
+      `${BASE_URL}/api/v2/disbursements/single`,
       {
-        amount,
-        debitAccountReference: senderAccount.accountReference,
-        debitAccountName: senderAccount.accountName,
-        creditAccountNumber: recipientAccountNumber,
-        narration: 'Funds transfer',
+        "amount": amount,
+    // "reference":"ben9-jlo00hdhdjjdfjoj--i",
+    "narration":"Test01",
+    "destinationBankCode": recipientAccount.bankCode,
+    "destinationAccountNumber": recipientAccount.accountNumber,
+    "currency": "NGN",
+    "sourceAccountNumber": senderAccount.accounts.accountNumber,
+    "destinationAccountName": recipientAccount.accountName,
       },
-      generateAuthHeader(accessToken)
+      generateReservedHeader(accessToken)
     );
 
     // Return the transfer response
@@ -182,6 +197,7 @@ app.post('/transfers', async (req, res) => {
     res.status(500).json({ error: 'Failed to initiate bank transfer' });
   }
 });
+
 
 // Add additional endpoints and functionality as needed
 
