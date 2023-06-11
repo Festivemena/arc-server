@@ -78,18 +78,20 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Define an endpoint to obtain the access token and authenticate the user
 app.post('/auth/login', async (req, res) => {
   try {
+    // Obtain the access token from Monnify
+    const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
+        apiKey: API_KEY,
+        secretKey: SECRET_KEY,
+      },
+      generateAuthHeader(req.body.accessToken));
+
+      const accessToken = response.data.responseBody.accessToken;
+      consol.log(accessToken);
+
     // Store the user data in MongoDB
     const { name, email, password } = req.body;
     const user = new User({ name, email, password });
     await user.save();
-
-    // Obtain the access token from Monnify
-    const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
-      apiKey: API_KEY,
-      secretKey: SECRET_KEY,
-    });
-    const accessToken = response.data.responseBody.accessToken;
-    consol.log(accessToken);
 
     // Create a reserved account
     const accountResponse = await axios.post(
@@ -100,7 +102,9 @@ app.post('/auth/login', async (req, res) => {
         "currencyCode" : "NGN",
         "contractCode" : CONTRACT_CODE,
         "customerEmail": user.email,
-        "customerName": user.name, 
+        "customerName": user.name,
+        "getAllAvailableBanks": false,
+        "preferredBanks": ["035"],
       },
       generateAuthHeader(accessToken)
     );
