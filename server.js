@@ -85,8 +85,7 @@ app.post('/auth/login', async (req, res) => {
       },
       generateAuthHeader(accessToken));
 
-      const accessToken = response.data.responseBody.accessToken;
-      consol.log(accessToken);
+      console.log(accessToken);
 
     // Store the user data in MongoDB
     const { name, email, password } = req.body;
