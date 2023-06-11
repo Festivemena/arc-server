@@ -83,7 +83,7 @@ app.post('/auth/login', async (req, res) => {
         apiKey: API_KEY,
         secretKey: SECRET_KEY,
       },
-      generateAuthHeader(req.body.accessToken));
+      generateAuthHeader(accessToken));
 
       const accessToken = response.data.responseBody.accessToken;
       consol.log(accessToken);
