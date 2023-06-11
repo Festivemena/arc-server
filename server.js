@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import mongoose from 'mongoose';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // Function to generate the authorization header with the access token
-const generateAuthHeader = (accessToken) => {
+const generateAuthHeader = () => {
   return {
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ const generateReservedHeader = (accessToken) => {
     return {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${Buffer.from(`${API_KEY}:${SECRET_KEY}`).toString('base64')}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     };
   };
@@ -87,19 +87,23 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Define an endpoint to obtain the access token and authenticate the user
 app.post('/auth/login', async (req, res) => {
   try {
+
+     // Store the user data in MongoDB
+     const { name, email, password } = req.body;
+     const user = new User({ name, email, password });
+     await user.save();
+
     // Obtain the access token from Monnify
     const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
         apiKey: API_KEY,
         secretKey: SECRET_KEY,
       },
+      generateAuthHeader(),
+      );
 
-      generateAuthHeader(accessToken));
-
-    // Store the user data in MongoDB
-    const { name, email, password } = req.body;
-    const user = new User({ name, email, password });
-    await user.save();
-
+    // Store the access token
+      const accessToken = response.data.responseBody.accessToken;
+     
     // Create a reserved account
     const accountResponse = await axios.post(
       `${BASE_URL}/v2/bank-transfer/reserved-accounts`,
