@@ -89,6 +89,7 @@ app.post('/auth/login', async (req, res) => {
       secretKey: SECRET_KEY,
     });
     const accessToken = response.data.responseBody.accessToken;
+    consol.log(accessToken);
 
     // Create a reserved account
     const accountResponse = await axios.post(
