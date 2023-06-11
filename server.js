@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { validationResult } from 'express-validator';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import { v4 } from 'uuid';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const app = express();
 const API_KEY = process.env.MONNIFY_API_KEY;
 const SECRET_KEY = process.env.MONNIFY_SECRET_KEY;
 const BASE_URL = process.env.BASE_URL;
+const reference = v4();
 const CONTRACT_CODE = process.env.CONTRACT_CODE;
 
 // Configure Express to parse JSON
@@ -179,7 +181,7 @@ app.post('/transfers', async (req, res) => {
       `${BASE_URL}/api/v2/disbursements/single`,
       {
         "amount": amount,
-    // "reference":"ben9-jlo00hdhdjjdfjoj--i",
+     "reference": reference,
     "narration":"Test01",
     "destinationBankCode": recipientAccount.bankCode,
     "destinationAccountNumber": recipientAccount.accountNumber,
