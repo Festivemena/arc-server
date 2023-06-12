@@ -105,7 +105,7 @@ app.post('/login', async (req, res) => {
       secretKey: SECRET_KEY,
     },
        generateAuthHeader(),
-      ););
+      );
 
     // Store the access token
     const accessToken = response.data.responseBody.accessToken;
