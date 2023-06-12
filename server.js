@@ -98,7 +98,31 @@ app.post('/login', async (req, res) => {
     
     // Generate the token
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+    
+    // Obtain the access token from Monnify
+    const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
+        apiKey: API_KEY,
+        secretKey: SECRET_KEY,
+      },
+      generateAuthHeader(),
+      );
 
+    // Store the access token
+      const accessToken = response.data.responseBody.accessToken;
+    
+    // Retrieve user's account details from Monnify API
+    const accountResponse = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${user.accountReference}`,
+       generateReservedHeader(accessToken)
+       });
+    const accountDetails = accountResponse.data.responseBody;
+
+    // Update the MongoDB user document with the account details
+    user.accountDetails = accountDetails;
+    await user.save();
+
+    // Send the token and user data in the response
+    res.json({ token, user });
+    
     // Send the token and user data in the response
     res.json({ token, user });
   } catch (error) {
