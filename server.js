@@ -112,8 +112,8 @@ app.post('/login', async (req, res) => {
     
     // Retrieve user's account details from Monnify API
     const accountResponse = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${user.accountReference}`,
-       generateReservedHeader(accessToken)
-       });
+      generateReservedHeader(accessToken)
+    );
     const accountDetails = accountResponse.data.responseBody;
 
     // Update the MongoDB user document with the account details
