@@ -95,25 +95,25 @@ app.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
+
     // Generate the token
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
-    
+
     // Obtain the access token from Monnify
     const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
-        apiKey: API_KEY,
-        secretKey: SECRET_KEY,
-      },
-      generateAuthHeader(),
-      );
+      apiKey: API_KEY,
+      secretKey: SECRET_KEY,
+    });
 
     // Store the access token
-      const accessToken = response.data.responseBody.accessToken;
-    
+    const accessToken = response.data.responseBody.accessToken;
+
     // Retrieve user's account details from Monnify API
-    const accountResponse = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${user.accountReference}`,
-      generateReservedHeader(accessToken)
-    );
+    const accountResponse = await axios.get(`${BASE_URL}/v2/bank-transfer/reserved-accounts/${user.accountReference}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
     const accountDetails = accountResponse.data.responseBody;
 
     // Update the MongoDB user document with the account details
@@ -122,12 +122,17 @@ app.post('/login', async (req, res) => {
 
     // Send the token and user data in the response
     res.json({ token, user });
-    
-    // Send the token and user data in the response
-    res.json({ token, user });
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ message: 'An error occurred during login' });
+
+    if (error.response) {
+      // Monnify API error
+      const errorMessage = error.response?.data?.message || 'An error occurred during login to Monnify';
+      res.status(500).json({ message: errorMessage });
+    } else {
+      // MongoDB error or other server error
+      res.status(500).json({ message: 'An error occurred during login' });
+    }
   }
 });
 
