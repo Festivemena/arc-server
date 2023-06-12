@@ -92,12 +92,20 @@ app.post('/login', async (req, res) => {
 
     // Query the database for the user
     const user = await User.findOne({ name });
-      return user;
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    // Generate the token
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+
+    // Send the token and user data in the response
+    res.json({ token, user });
   } catch (error) {
     console.error('Error:', error);
-    throw error;
+    res.status(500).json({ message: 'An error occurred during login' });
   }
-};
+});
 
 // Define an endpoint to obtain the access token and authenticate the user
 app.post('/auth/login', async (req, res) => {
