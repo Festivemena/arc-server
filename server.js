@@ -109,7 +109,7 @@ app.post('/login', async (req, res) => {
     const accessToken = response.data.responseBody.accessToken;
 
     // Retrieve user's account details from Monnify API
-    const accountResponse = await axios.get(`${BASE_URL}/v2/bank-transfer/reserved-accounts/${user.accountReference}`, {
+    const accountResponse = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${user.accountReference}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
