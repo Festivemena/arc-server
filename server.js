@@ -103,7 +103,9 @@ app.post('/login', async (req, res) => {
     const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
       apiKey: API_KEY,
       secretKey: SECRET_KEY,
-    });
+    },
+       generateAuthHeader(),
+      ););
 
     // Store the access token
     const accessToken = response.data.responseBody.accessToken;
