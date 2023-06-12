@@ -92,26 +92,12 @@ app.post('/login', async (req, res) => {
 
     // Query the database for the user
     const user = await User.findOne({ name });
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password' });
-    }
-
-//     // Compare the hashed password
-//     const isPasswordMatch = await bcrypt.compare(password, user.password);
-
-//     if (!isPasswordMatch) {
-//       return res.status(401).json({ error: 'Invalid username or password' });
-//     }
-
-    // User authentication successful
-    res.json({ message: 'Login successful', user });
-    console.log(user);
+      return user;
   } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error:', error);
+    throw error;
   }
-});
+};
 
 // Define an endpoint to obtain the access token and authenticate the user
 app.post('/auth/login', async (req, res) => {
