@@ -200,7 +200,7 @@ app.post('/auth/login', async (req, res) => {
 });
 
 // Define an endpoint to get a reserved account detail with accountReference as key or id
-app.get('/account', async (req, res) => {
+app.get(`/account/${accountReference}`, async (req, res) => {
   try {
     const {accountReference} = req.params;
 
