@@ -200,9 +200,9 @@ app.post('/auth/login', async (req, res) => {
 });
 
 // Define an endpoint to get a reserved account detail with accountReference as key or id
-app.get(`/account`, async (req, res) => {
+app.post(`/account`, async (req, res) => {
   try {
-    const {accountReference} = req.params;
+    const {accountReference} = req.body;
 
     const response = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${accountReference}`, {
       apiKey: API_KEY,
