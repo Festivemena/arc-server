@@ -59,6 +59,30 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  contractCode: {
+    type: String,
+    default: null,
+  },
+  currencyCode: {
+    type: String,
+    default: null,
+  },
+  accountName: {
+    type: String,
+    default: null,
+  },
+  bankCode: {
+    type: String,
+    default: null,
+  },
+  bankName: {
+    type: String,
+    default: null,
+  },
+  accountNumber: {
+    type: String,
+    default: null,
+  }
 });
 
 const User = mongoose.model('User', userSchema);
@@ -69,6 +93,15 @@ const generateAuthHeader = () => {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(`${API_KEY}:${SECRET_KEY}`).toString('base64')}`,
+    },
+  };
+};
+
+const generateDetailHeader = () => {
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${Buffer.from(`${API_KEY}:${SECRET_KEY}`).toString('base64')}`,
     },
   };
 };
@@ -99,42 +132,11 @@ app.post('/login', async (req, res) => {
     // Generate the token
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
 
-    // Obtain the access token from Monnify
-    const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
-      apiKey: API_KEY,
-      secretKey: SECRET_KEY,
-    },
-       generateAuthHeader(),
-      );
-
-    // Store the access token
-    const accessToken = response.data.responseBody.accessToken;
-
-    // Retrieve user's account details from Monnify API
-    const accountResponse = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${user.accountReference}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    const accountDetails = accountResponse.data.responseBody;
-
-    // Update the MongoDB user document with the account details
-    user.accountDetails = accountDetails;
-    await user.save();
-
     // Send the token and user data in the response
     res.json({ token, user });
   } catch (error) {
     console.error('Error:', error);
-
-    if (error.response) {
-      // Monnify API error
-      const errorMessage = error.response?.data?.message || 'An error occurred during login to Monnify';
-      res.status(500).json({ message: errorMessage });
-    } else {
-      // MongoDB error or other server error
-      res.status(500).json({ message: 'An error occurred during login' });
-    }
+     res.status(500).json({ message: 'An error occurred during login' });
   }
 });
 
@@ -197,12 +199,48 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+// Define an endpoint to get a reserved account detail with accountReference as key or id
+app.get('/account', async (req, res) => {
+  try {
+    const {accountReference} = req.params;
+
+    const response = await axios.get(`${BASE_URL}/v1/bank-transfer/reserved-accounts/${accountReference}`, {
+      apiKey: API_KEY,
+      secretKey: SECRET_KEY,
+    },
+    generateDetailHeader(),
+    );
+
+    // Query the database for the accountReference
+     const user = await User.findOne({ accountReference });
+
+    // you'll hopefully get the account's contractCode, accountReference, accountName, currencyCode, customerEmail, customerName, accounts = [{ bankCode, bankName, accountNumber}]
+    const details = response.data.responseBody;
+
+    // Update the user with the account reference
+    user.contractCode = details.contractCode;
+    user.accountName = details.accountName;
+    user.currencyCode = details.currencyCode;
+    user.bankCode = details.accounts.bankCode;
+    user.bankName = details.accounts.bankName;
+    user.accountNumber = details.accounts.accountNumber;
+    await user.save();
+    console.log(details);
+
+
+    // returns the data to the frontend
+    res.json(details);
+  } catch (error) {
+    console.error('Error getting account Details', error.message);
+    res.status(500).json({ error: 'Failed to get account Details' });
+  }
+});
 
 // Define an endpoint to initiate a bank transfer
 // Define an endpoint to initiate a bank transfer
 app.post('/transfers', async (req, res) => {
   try {
-    const { senderAccountReference, recipientAccountNumber, amount } = req.body;
+    const { amount, narration, destinationBankCode, destinationAccountNumber, destinationAccountName, sourceAccountNumber } = req.body;
 
     const response = await axios.post(`${BASE_URL}/v1/auth/login`, {
         apiKey: API_KEY,
@@ -212,22 +250,8 @@ app.post('/transfers', async (req, res) => {
       );
 
     // Store the access token
-      const accessToken = response.data.responseBody.accessToken;
+    const accessToken = response.data.responseBody.accessToken;
 
-    // Fetch the sender's reserved account details
-    const accountResponse = await axios.get(
-      `${BASE_URL}/v2/bank-transfer/reserved-accounts/${senderAccountReference}`,
-      generateReservedHeader(accessToken)
-    );
-    
-    const senderAccount = accountResponse.data.responseBody;
-
-    const recipientResponse = await axios.get(
-      `${BASE_URL}/v1/disbursements/account/validate?accountNumber=${recipientAccountNumber}&bankCode=035`,
-      generateReservedHeader(accessToken)
-    );
-    
-    const recipientAccount = recipientResponse.data.responseBody;
     const reference = v4();
     // Perform the bank transfer
     const transferResponse = await axios.post(
@@ -235,18 +259,19 @@ app.post('/transfers', async (req, res) => {
       {
         "amount": amount,
      "reference": reference,
-    "narration":"Test01",
-    "destinationBankCode": recipientAccount.bankCode,
-    "destinationAccountNumber": recipientAccount.accountNumber,
+    "narration": narration,
+    "destinationBankCode": destinationBankCode,
+    "destinationAccountNumber": destinationAccountNumber,
     "currency": "NGN",
-    "sourceAccountNumber": senderAccount.accounts.accountNumber,
-    "destinationAccountName": recipientAccount.accountName,
+    "sourceAccountNumber": sourceAccountNumber,
+    "destinationAccountName": destinationAccountName,
       },
       generateReservedHeader(accessToken)
     );
 
     // Return the transfer response
-    res.json(transferResponse.data);
+    res.json(transferResponse.data.responseBody);
+    console.log(transferResponse.data)
   } catch (error) {
     console.error('Error initiating bank transfer:', error.message);
     res.status(500).json({ error: 'Failed to initiate bank transfer' });
